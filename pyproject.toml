@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lsm-spacy"
+version = "0.1.0"
+description = "Cálculo de Language Style Matching (LSM) sobre transcripciones de diálogo, usando spaCy."
+readme = "README.md"
+license = { text = "" }
+authors = [
+    { name = "Tomás Gallo" },
+    { name = "Agustín Gravano" },
+]
+requires-python = ">=3.9"
+dependencies = [
+    "spacy>=3.7,<4.0",
+    "numpy>=1.24",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+
+[project.urls]
+Homepage = "https://github.com/tototomygallo/lsm-spacy"
+Repository = "https://github.com/tototomygallo/lsm-spacy"
+# Documentation = "https://lsm-spacy.readthedocs.io"  # si en algún momento armás docs con Sphinx
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "build",
+    "twine",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lsm_spacy"]

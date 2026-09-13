@@ -1,0 +1,29 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # necesario para "trusted publishing" (sin API token)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar herramientas de build
+        run: pip install build
+
+      - name: Construir el paquete
+        run: python -m build
+
+      - name: Publicar en PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
