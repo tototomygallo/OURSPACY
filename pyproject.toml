@@ -38,3 +38,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/lsm_spacy"]
+
+
+[project.scripts]
+lsm-spacy = "lsm_spacy.cli:main"
