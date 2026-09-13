@@ -8,7 +8,7 @@ def test_lsm_basico_espanol():
         "A: Creo que no vamos a poder ir hoy porque está complicado.",
         "B: Sí, creo que no vamos a poder ir hoy, está bastante complicado.",
     ]
-    resultado = calculo_LSM(dialogo, lang="es")
+    resultado = calculo_LSM(dialogo, lang="es", min_words=5)
     assert resultado is not None
     assert 0.0 <= resultado <= 1.0001  # el score suele caer en [0,1], con margen numérico
 
@@ -18,7 +18,7 @@ def test_lsm_basico_ingles():
         "A: I do not think we can go today because it is complicated.",
         "B: Yes I think we cannot go today it is quite complicated.",
     ]
-    resultado = calculo_LSM(dialogo, lang="en")
+    resultado = calculo_LSM(dialogo, lang="en", min_words=5)
     assert resultado is not None
     assert 0.0 <= resultado <= 1.0001
 
@@ -60,5 +60,5 @@ def test_lineas_sin_separador_se_ignoran():
         "A: Hola, ¿cómo estás?",
         "B: Muy bien, gracias.",
     ]
-    resultado = calculo_LSM(dialogo, lang="es")
+    resultado = calculo_LSM(dialogo, lang="es", min_words=1)
     assert resultado is not None

@@ -28,6 +28,12 @@ def main():
         choices=idiomas_soportados(),
         help="Idioma del diálogo (default: es).",
     )
+    parser.add_argument(
+        "--min-words",
+        type=int,
+        default=20,
+        help="Cantidad mínima de palabras que debe tener cada hablante para calcular el LSM (default: 20).",
+    )
 
     args = parser.parse_args()
 
@@ -41,10 +47,10 @@ def main():
         print(f"✗ El archivo está vacío: {args.archivo}", file=sys.stderr)
         sys.exit(1)
 
-    score = calculo_LSM(lineas, lang=args.lang)
+    score = calculo_LSM(lineas, lang=args.lang, min_words=args.min_words)
 
     if score is None:
-        print("LSM: None (indefinido -- ver min_words / cantidad de hablantes)")
+        print(f"LSM: None (indefinido -- ver min_words={args.min_words} / cantidad de hablantes)")
     else:
         print(f"LSM: {score:.4f}")
 
