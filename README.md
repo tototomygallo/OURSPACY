@@ -1,7 +1,9 @@
-# lsm-spacy
+# OURSPACY
 
 Cálculo de **Language Style Matching (LSM)** sobre transcripciones de
 diálogo, usando [spaCy](https://spacy.io/) para el análisis morfosintáctico.
+El paquete de Python se llama `lsm_spacy` (así se importa en el código),
+pero el proyecto/repo por ahora se llama **OURSPACY**.
 
 LSM mide en qué medida dos personas que conversan igualan su uso de
 palabras funcionales (pronombres, artículos, preposiciones, negaciones,
@@ -17,32 +19,27 @@ adverbios, verbos auxiliares y conjunciones) — ver Ireland & Pennebaker
 - [Formato del archivo/diálogo de entrada](#formato-del-archivodiálogo-de-entrada)
 - [Cuándo devuelve `None`](#cuándo-devuelve-none)
 - [Idiomas soportados](#idiomas-soportados)
-- [Desarrollo](#desarrollo)
 - [Licencia](#licencia)
 
 ## Instalación
 
-### 1. Instalar el paquete
+El paquete todavía no está publicado en PyPI, así que por ahora este es el
+**único** proceso de instalación soportado:
 
 ```bash
-pip install lsm-spacy
-```
-
-### 2. Instalar el/los modelo(s) de spaCy
-
-El modelo de idioma **no** viaja con el paquete (pesa demasiado), así que
-hay que descargarlo aparte, una vez, para cada idioma que vayas a usar:
-
-```bash
-# para español
+git clone https://github.com/tototomygallo/OURSPACY
+cd OURSPACY
+pip install -e ".[dev]"
 python -m spacy download es_core_news_md
-
-# para inglés
 python -m spacy download en_core_web_md
+pytest
 ```
 
-Si te olvidás este paso, `lsm-spacy` va a tirar un error explicando
-exactamente qué comando correr para arreglarlo.
+El modelo de idioma de spaCy **no** viaja con el paquete (pesa demasiado),
+por eso hay que descargarlo aparte con `python -m spacy download ...`. Si
+te olvidás este paso, `lsm-spacy` va a tirar un error explicando
+exactamente qué comando correr para arreglarlo. El `pytest` final corre la
+suite de tests para confirmar que la instalación quedó bien.
 
 ## Uso rápido (línea de comandos)
 
@@ -53,12 +50,18 @@ LSM directamente sobre un archivo `.txt`:
 lsm-spacy mi_dialogo.txt
 ```
 
+Ojo: por default se exige un mínimo de 20 palabras por hablante
+(`min_words`, ver [más abajo](#el-parámetro-min_words)). Si tu archivo
+tiene diálogos cortos (como los ejemplos de este README), vas a necesitar
+bajar ese mínimo con `--min-words`, o el resultado va a dar `None`.
+
 Opciones disponibles:
 
-| Opción         | Default | Descripción                                                        |
-|----------------|---------|---------------------------------------------------------------------|
-| `--lang`       | `es`    | Idioma del diálogo (`es` o `en`).                                    |
-| `--min-words`  | `20`    | Mínimo de palabras por hablante para que el LSM se considere válido. |
+
+| Opción       | Default | Descripción                                                           |
+| --------------- | --------- | ------------------------------------------------------------------------ |
+| `--lang`      | `es`    | Idioma del diálogo (`es` o `en`).                                     |
+| `--min-words` | `20`    | Mínimo de palabras por hablante para que el LSM se considere válido. |
 
 Ejemplos:
 
@@ -95,7 +98,10 @@ dialogo = [
     "B: Sí, creo que no vamos a poder ir hoy, está bastante complicado.",
 ]
 
-score = calculo_LSM(dialogo, lang="es")
+# min_words=5 porque este diálogo de ejemplo es corto (~11 palabras por
+# hablante); con el default (min_words=20) daría None. Ver la sección
+# "El parámetro min_words" más abajo.
+score = calculo_LSM(dialogo, lang="es", min_words=5)
 print(score)  # ej: 0.87
 ```
 
@@ -180,20 +186,10 @@ print(idiomas_soportados())  # ['es', 'en']
 
 Agregar un idioma nuevo implica editar `src/lsm_spacy/core.py`, en los dos
 lugares marcados con el comentario `[AGREGAR ACÁ UN NUEVO IDIOMA]`:
+
 1. En `_get_model`, para cargar el modelo de spaCy correspondiente.
 2. En `conteo_categorias`, agregando un nuevo `elif lang == "..."` con las
    reglas de conteo de ese idioma.
-
-## Desarrollo
-
-```bash
-git clone https://github.com/tototomygallo/lsm-spacy
-cd lsm-spacy
-pip install -e ".[dev]"
-python -m spacy download es_core_news_md
-python -m spacy download en_core_web_md
-pytest
-```
 
 ## Licencia
 

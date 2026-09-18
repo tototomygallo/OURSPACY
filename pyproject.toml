@@ -25,8 +25,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tototomygallo/lsm-spacy"
-Repository = "https://github.com/tototomygallo/lsm-spacy"
+Homepage = "https://github.com/tototomygallo/OURSPACY"
+Repository = "https://github.com/tototomygallo/OURSPACY"
 # Documentation = "https://lsm-spacy.readthedocs.io"  # si en algún momento armás docs con Sphinx
 
 [project.optional-dependencies]
