@@ -1,30 +1,30 @@
 # OURSPACY
 
-Cálculo de **Language Style Matching (LSM)** sobre transcripciones de
-diálogo, usando [spaCy](https://spacy.io/) para el análisis morfosintáctico.
-El paquete de Python se llama `lsm_spacy` (así se importa en el código),
-pero el proyecto/repo por ahora se llama **OURSPACY**.
+Computation of **Language Style Matching (LSM)** over dialogue
+transcripts, using [spaCy](https://spacy.io/) for morphosyntactic
+analysis. The Python package is called `lsm_spacy` (that's what you
+import in code), but the project/repo is called **OURSPACY** for now.
 
-LSM mide en qué medida dos personas que conversan igualan su uso de
-palabras funcionales (pronombres, artículos, preposiciones, negaciones,
-adverbios, verbos auxiliares y conjunciones) — ver Ireland & Pennebaker
-(2010) para la definición original de la métrica.
+LSM measures how much two people in a conversation match each other's use
+of function words (pronouns, articles, prepositions, negations, adverbs,
+auxiliary verbs, and conjunctions) — see Ireland & Pennebaker (2010) for
+the original definition of the metric.
 
-## Índice
+## Table of contents
 
-- [Instalación](#instalación)
-- [Uso rápido (línea de comandos)](#uso-rápido-línea-de-comandos)
-- [Uso desde Python](#uso-desde-python)
-- [El parámetro `min_words`](#el-parámetro-min_words)
-- [Formato del archivo/diálogo de entrada](#formato-del-archivodiálogo-de-entrada)
-- [Cuándo devuelve `None`](#cuándo-devuelve-none)
-- [Idiomas soportados](#idiomas-soportados)
-- [Licencia](#licencia)
+- [Installation](#installation)
+- [Quick usage (command line)](#quick-usage-command-line)
+- [Usage from Python](#usage-from-python)
+- [The `min_words` parameter](#the-min_words-parameter)
+- [Input dialogue/file format](#input-dialoguefile-format)
+- [When it returns `None`](#when-it-returns-none)
+- [Supported languages](#supported-languages)
+- [License](#license)
 
-## Instalación
+## Installation
 
-El paquete todavía no está publicado en PyPI, así que por ahora este es el
-**único** proceso de instalación soportado:
+The package isn't published on PyPI yet, so for now this is the **only**
+supported installation process:
 
 ```bash
 git clone https://github.com/tototomygallo/OURSPACY
@@ -35,127 +35,127 @@ python -m spacy download en_core_web_md
 pytest
 ```
 
-El modelo de idioma de spaCy **no** viaja con el paquete (pesa demasiado),
-por eso hay que descargarlo aparte con `python -m spacy download ...`. Si
-te olvidás este paso, `lsm-spacy` va a tirar un error explicando
-exactamente qué comando correr para arreglarlo. El `pytest` final corre la
-suite de tests para confirmar que la instalación quedó bien.
+The spaCy language model does **not** ship with the package (it's too
+heavy), which is why it has to be downloaded separately with
+`python -m spacy download ...`. If you skip this step, `lsm-spacy` will
+raise an error explaining exactly which command to run. The final
+`pytest` run runs the test suite to confirm the install went well.
 
-## Uso rápido (línea de comandos)
+## Quick usage (command line)
 
-Instalar el paquete también instala el comando `lsm-spacy`, que calcula el
-LSM directamente sobre un archivo `.txt`:
-
-```bash
-lsm-spacy mi_dialogo.txt
-```
-
-Ojo: por default se exige un mínimo de 20 palabras por hablante
-(`min_words`, ver [más abajo](#el-parámetro-min_words)). Si tu archivo
-tiene diálogos cortos (como los ejemplos de este README), vas a necesitar
-bajar ese mínimo con `--min-words`, o el resultado va a dar `None`.
-
-Opciones disponibles:
-
-
-| Opción       | Default | Descripción                                                           |
-| --------------- | --------- | ------------------------------------------------------------------------ |
-| `--lang`      | `es`    | Idioma del diálogo (`es` o `en`).                                     |
-| `--min-words` | `20`    | Mínimo de palabras por hablante para que el LSM se considere válido. |
-
-Ejemplos:
+Installing the package also installs the `lsm-spacy` command, which
+computes LSM directly over a `.txt` file:
 
 ```bash
-# diálogo en inglés
-lsm-spacy mi_dialogo.txt --lang en
-
-# bajar el mínimo de palabras exigido por hablante a 5
-lsm-spacy mi_dialogo.txt --min-words 5
-
-# combinando ambas opciones
-lsm-spacy mi_dialogo.txt --lang en --min-words 5
+lsm-spacy my_dialogue.txt
 ```
 
-Salida esperada:
+Heads up: by default a minimum of 20 words per speaker is required
+(`min_words`, see [below](#the-min_words-parameter)). If your file has
+short dialogues (like the examples in this README), you'll need to lower
+that minimum with `--min-words`, or the result will be `None`.
+
+Available options:
+
+| Option        | Default | Description                                                     |
+| ------------- | ------- | ---------------------------------------------------------------- |
+| `--lang`      | `es`    | Language of the dialogue (`es` or `en`).                          |
+| `--min-words` | `20`    | Minimum words per speaker for the LSM to be considered valid.     |
+
+Examples:
+
+```bash
+# dialogue in English
+lsm-spacy my_dialogue.txt --lang en
+
+# lower the required minimum words per speaker to 5
+lsm-spacy my_dialogue.txt --min-words 5
+
+# combining both options
+lsm-spacy my_dialogue.txt --lang en --min-words 5
+```
+
+Expected output:
 
 ```text
 LSM: 0.8734
 ```
 
-o, si el resultado está indefinido (ver [más abajo](#cuándo-devuelve-none)):
+or, if the result is undefined (see [below](#when-it-returns-none)):
 
 ```text
-LSM: None (indefinido -- ver min_words=20 / cantidad de hablantes)
+LSM: None (undefined -- see min_words=20 / number of speakers)
 ```
 
-## Uso desde Python
+## Usage from Python
 
 ```python
-from lsm_spacy import calculo_LSM
+from lsm_spacy import calculate_lsm
 
-dialogo = [
+dialogue = [
     "A: Creo que no vamos a poder ir hoy porque está complicado.",
     "B: Sí, creo que no vamos a poder ir hoy, está bastante complicado.",
 ]
 
-# min_words=5 porque este diálogo de ejemplo es corto (~11 palabras por
-# hablante); con el default (min_words=20) daría None. Ver la sección
-# "El parámetro min_words" más abajo.
-score = calculo_LSM(dialogo, lang="es", min_words=5)
-print(score)  # ej: 0.87
+# min_words=5 because this sample dialogue is short (~11 words per
+# speaker); with the default (min_words=20) it would return None. See the
+# "The min_words parameter" section below.
+score = calculate_lsm(dialogue, lang="es", min_words=5)
+print(score)  # e.g.: 0.87
 ```
 
-Cada línea debe tener el formato `"HABLANTE: texto"`. Solo se usan los
-dos primeros hablantes distintos que aparezcan en la conversación.
+Each line must have the format `"SPEAKER: text"`. Only the first two
+distinct speakers that appear in the conversation are used.
 
-Si tu diálogo está en un archivo `.txt` (una intervención por línea, mismo
-formato `"HABLANTE: texto"`), usá `leer_dialogo` para convertirlo en la
-lista que espera `calculo_LSM`:
+If your dialogue is in a `.txt` file (one turn per line, same
+`"SPEAKER: text"` format), use `read_dialogue` to turn it into the list
+that `calculate_lsm` expects:
 
 ```python
-from lsm_spacy import calculo_LSM, leer_dialogo
+from lsm_spacy import calculate_lsm, read_dialogue
 
-dialogo = leer_dialogo("mi_dialogo.txt")
-score = calculo_LSM(dialogo, lang="es")
+dialogue = read_dialogue("my_dialogue.txt")
+score = calculate_lsm(dialogue, lang="es")
 print(score)
 ```
 
-## El parámetro `min_words`
+## The `min_words` parameter
 
-`calculo_LSM` recibe un parámetro opcional `min_words` (default: `20`):
-es la cantidad mínima de palabras que cada uno de los dos hablantes
-principales tiene que tener contabilizadas para que el LSM se calcule. Si
-alguno de los dos no llega a ese mínimo, la función devuelve `None`.
+`calculate_lsm` takes an optional `min_words` parameter (default: `20`):
+the minimum number of words each of the two main speakers must have
+counted for the LSM to be computed. If either of them doesn't reach that
+minimum, the function returns `None`.
 
-Para cambiarlo, se pasa como argumento con nombre en la llamada a
-`calculo_LSM` (no hay que tocar `core.py`):
+To change it, pass it as a keyword argument to `calculate_lsm` (no need
+to touch `core.py`):
 
 ```python
-from lsm_spacy import calculo_LSM
+from lsm_spacy import calculate_lsm
 
-# exigir al menos 5 palabras por hablante en vez de 20
-score = calculo_LSM(dialogo, lang="es", min_words=5)
+# require at least 5 words per speaker instead of 20
+score = calculate_lsm(dialogue, lang="es", min_words=5)
 ```
 
-Por línea de comandos es el flag `--min-words` (ver [arriba](#uso-rápido-línea-de-comandos)):
+From the command line it's the `--min-words` flag (see
+[above](#quick-usage-command-line)):
 
 ```bash
-lsm-spacy mi_dialogo.txt --min-words 5
+lsm-spacy my_dialogue.txt --min-words 5
 ```
 
-Bajar `min_words` permite calcular LSM sobre diálogos cortos, pero el
-resultado se vuelve menos confiable cuantas menos palabras haya para
-estimar los porcentajes por categoría.
+Lowering `min_words` allows computing LSM over short dialogues, but the
+result becomes less reliable the fewer words there are to estimate the
+per-category percentages.
 
-## Formato del archivo/diálogo de entrada
+## Input dialogue/file format
 
-- Una intervención por línea, con el formato `"HABLANTE: texto"`.
-- Las líneas sin `:` se ignoran.
-- Solo se tienen en cuenta los dos primeros hablantes distintos que
-  aparecen; si hay un tercero, sus líneas se leen pero no participan del
-  cálculo.
+- One turn per line, in the format `"SPEAKER: text"`.
+- Lines without `:` are ignored.
+- Only the first two distinct speakers that appear are taken into
+  account; if there's a third one, their lines are read but don't
+  participate in the computation.
 
-Ejemplo de archivo válido:
+Example of a valid file:
 
 ```text
 A: Creo que no vamos a poder ir hoy porque está complicado.
@@ -163,34 +163,34 @@ B: Sí, creo que no vamos a poder ir hoy, está bastante complicado.
 A: Bueno, lo intentamos mañana entonces.
 ```
 
-## Cuándo devuelve `None`
+## When it returns `None`
 
-`calculo_LSM` devuelve `None` (no `0.0`) cuando el valor de LSM está
-**indefinido**, no cuando da bajo:
+`calculate_lsm` returns `None` (not `0.0`) when the LSM value is
+**undefined**, not when it's simply low:
 
-- si la conversación tiene menos de 2 hablantes distintos, o
-- si alguno de los dos hablantes principales no llega a `min_words`
-  palabras contabilizadas.
+- if the conversation has fewer than 2 distinct speakers, or
+- if either of the two main speakers doesn't reach `min_words` counted
+  words.
 
-Esto es intencional: tratar `0.0` como "no se pudo calcular" mezclaría
-esos casos con conversaciones que sí tienen un LSM real y bajo. Si vas a
-guardar resultados en un CSV o DataFrame, filtrá con algo como
-`df[df["lsm"].notna()]`, no con `df[df["lsm"] > 0]`.
+This is intentional: treating `0.0` as "couldn't be computed" would mix
+those cases up with conversations that do have a real, low LSM. If you're
+saving results to a CSV or DataFrame, filter with something like
+`df[df["lsm"].notna()]`, not `df[df["lsm"] > 0]`.
 
-## Idiomas soportados
+## Supported languages
 
 ```python
-from lsm_spacy import idiomas_soportados
-print(idiomas_soportados())  # ['es', 'en']
+from lsm_spacy import supported_languages
+print(supported_languages())  # ['es', 'en']
 ```
 
-Agregar un idioma nuevo implica editar `src/lsm_spacy/core.py`, en los dos
-lugares marcados con el comentario `[AGREGAR ACÁ UN NUEVO IDIOMA]`:
+Adding a new language means editing `src/lsm_spacy/core.py`, in the two
+spots marked with the `[ADD A NEW LANGUAGE HERE]` comment:
 
-1. En `_get_model`, para cargar el modelo de spaCy correspondiente.
-2. En `conteo_categorias`, agregando un nuevo `elif lang == "..."` con las
-   reglas de conteo de ese idioma.
+1. In `_get_model`, to load the corresponding spaCy model.
+2. In `count_categories`, adding a new `elif lang == "..."` with that
+   language's counting rules.
 
-## Licencia
+## License
 
 MIT

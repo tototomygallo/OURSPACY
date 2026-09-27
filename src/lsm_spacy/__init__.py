@@ -1,19 +1,19 @@
 """
-lsm_spacy: cálculo de Language Style Matching (LSM) sobre transcripciones
-de diálogo, usando spaCy para el análisis morfosintáctico.
+lsm_spacy: computation of Language Style Matching (LSM) over dialogue
+transcripts, using spaCy for morphosyntactic analysis.
 """
 
-from .core import CATEGORIAS, calculo_LSM, conteo_categorias, idiomas_soportados
+from .core import CATEGORIES, calculate_lsm, count_categories, supported_languages
 
-from .io_utils import leer_dialogo
+from .io_utils import read_dialogue
 
 
 __all__ = [
-    "calculo_LSM",
-    "conteo_categorias",
-    "CATEGORIAS",
-    "idiomas_soportados",
-    "leer_dialogo"
+    "calculate_lsm",
+    "count_categories",
+    "CATEGORIES",
+    "supported_languages",
+    "read_dialogue"
 ]
 
 __version__ = "0.1.0"

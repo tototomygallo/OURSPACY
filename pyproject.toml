@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "lsm-spacy"
 version = "0.1.0"
-description = "Cálculo de Language Style Matching (LSM) sobre transcripciones de diálogo, usando spaCy."
+description = "Computation of Language Style Matching (LSM) over dialogue transcripts, using spaCy."
 readme = "README.md"
 license = { text = "" }
 authors = [

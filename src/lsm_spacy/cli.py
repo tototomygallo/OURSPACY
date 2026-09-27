@@ -1,56 +1,56 @@
 """
-Interfaz de línea de comandos para lsm_spacy.
+Command-line interface for lsm_spacy.
 
-Se instala como el comando `lsm-spacy` (ver [project.scripts] en
-pyproject.toml). No modifica la lógica de core.py: solo lee un archivo,
-se lo pasa a calculo_LSM tal cual está, y muestra el resultado.
+Installed as the `lsm-spacy` command (see [project.scripts] in
+pyproject.toml). Doesn't change the logic in core.py: it just reads a
+file, passes it to calculate_lsm as-is, and prints the result.
 """
 
 import argparse
 import sys
 
-from .core import calculo_LSM, idiomas_soportados
-from .io_utils import leer_dialogo
+from .core import calculate_lsm, supported_languages
+from .io_utils import read_dialogue
 
 
 def main():
     parser = argparse.ArgumentParser(
         prog="lsm-spacy",
-        description="Calcula el LSM (Language Style Matching) de un diálogo en un archivo .txt.",
+        description="Computes the LSM (Language Style Matching) of a dialogue in a .txt file.",
     )
     parser.add_argument(
-        "archivo",
-        help="Ruta al archivo .txt con el diálogo (formato 'HABLANTE: texto' por línea).",
+        "file",
+        help="Path to the .txt file with the dialogue (one 'SPEAKER: text' line per turn).",
     )
     parser.add_argument(
         "--lang",
         default="es",
-        choices=idiomas_soportados(),
-        help="Idioma del diálogo (default: es).",
+        choices=supported_languages(),
+        help="Language of the dialogue (default: es).",
     )
     parser.add_argument(
         "--min-words",
         type=int,
         default=20,
-        help="Cantidad mínima de palabras que debe tener cada hablante para calcular el LSM (default: 20).",
+        help="Minimum number of words each speaker must have for the LSM to be computed (default: 20).",
     )
 
     args = parser.parse_args()
 
     try:
-        lineas = leer_dialogo(args.archivo)
+        lines = read_dialogue(args.file)
     except FileNotFoundError:
-        print(f"✗ No se encontró el archivo: {args.archivo}", file=sys.stderr)
+        print(f"✗ File not found: {args.file}", file=sys.stderr)
         sys.exit(1)
 
-    if not lineas:
-        print(f"✗ El archivo está vacío: {args.archivo}", file=sys.stderr)
+    if not lines:
+        print(f"✗ File is empty: {args.file}", file=sys.stderr)
         sys.exit(1)
 
-    score = calculo_LSM(lineas, lang=args.lang, min_words=args.min_words)
+    score = calculate_lsm(lines, lang=args.lang, min_words=args.min_words)
 
     if score is None:
-        print(f"LSM: None (indefinido -- ver min_words={args.min_words} / cantidad de hablantes)")
+        print(f"LSM: None (undefined -- see min_words={args.min_words} / number of speakers)")
     else:
         print(f"LSM: {score:.4f}")
 

@@ -1,11 +1,11 @@
 """
-Cálculo de Language Style Matching (LSM) sobre transcripciones de diálogo,
-usando spaCy para el análisis morfosintáctico.
+Language Style Matching (LSM) computation over dialogue transcripts,
+using spaCy for morphosyntactic analysis.
 
-Todo el cálculo vive en un solo archivo a propósito: la carga de modelos,
-el conteo de categorías por idioma (con un if/elif que despacha según el
-idioma) y la función principal calculo_LSM. Para agregar un idioma nuevo
-alcanza con tocar este archivo en los dos lugares marcados más abajo.
+Everything lives in a single file on purpose: model loading, the
+per-language category counting (dispatched with an if/elif on the
+language) and the main calculate_lsm function. To add a new language it's
+enough to touch this file in the two spots marked below.
 """
 
 from collections import defaultdict
@@ -15,15 +15,15 @@ from typing import Optional
 import spacy
 
 # ==========================================
-# CARGA DE MODELOS (lazy loading + cache)
+# MODEL LOADING (lazy loading + cache)
 # ==========================================
 
 _MODELS = {}
 
 
 def _get_model(lang: str):
-    """Carga el modelo de spaCy del idioma pedido, cacheándolo para no
-    volver a cargarlo en cada llamada."""
+    """Loads the spaCy model for the requested language, caching it so it
+    isn't reloaded on every call."""
 
     if lang == "es":
         if "es" not in _MODELS:
@@ -35,38 +35,38 @@ def _get_model(lang: str):
             _MODELS["en"] = spacy.load("en_core_web_md")
         return _MODELS["en"]
 
-    # [AGREGAR ACÁ UN NUEVO IDIOMA]
+    # [ADD A NEW LANGUAGE HERE]
     # elif lang == "pt":
     #     if "pt" not in _MODELS:
     #         _MODELS["pt"] = spacy.load("pt_core_news_md")
     #     return _MODELS["pt"]
 
     else:
-        raise ValueError(f"Modelo para el idioma '{lang}' no configurado.")
+        raise ValueError(f"No model configured for language '{lang}'.")
 
 
-def idiomas_soportados() -> list[str]:
-    """Lista de códigos de idioma actualmente soportados."""
+def supported_languages() -> list[str]:
+    """List of currently supported language codes."""
     return ["es", "en"]
 
 
 # ==========================================
-# CONTEO DE CATEGORÍAS POR IDIOMA
+# PER-LANGUAGE CATEGORY COUNTING
 # ==========================================
 
-CATEGORIAS = [
-    "ppron",    # pronombres personales
-    "ipron",    # pronombres impersonales/indefinidos
-    "article",  # artículos
-    "prep",     # preposiciones
-    "negate",   # negaciones
-    "adverb",   # adverbios
-    "auxverb",  # verbos auxiliares
-    "conj",     # conjunciones
+CATEGORIES = [
+    "ppron",    # personal pronouns
+    "ipron",    # impersonal/indefinite pronouns
+    "article",  # articles
+    "prep",     # prepositions
+    "negate",   # negations
+    "adverb",   # adverbs
+    "auxverb",  # auxiliary verbs
+    "conj",     # conjunctions
 ]
 
 
-def _es_negacion_es(t) -> bool:
+def _is_negation_es(t) -> bool:
     return (
         t.lemma_.lower() == "no"
         or t.dep_ == "neg"
@@ -75,51 +75,51 @@ def _es_negacion_es(t) -> bool:
     )
 
 
-def conteo_categorias(text: str, lang: str = "es"):
+def count_categories(text: str, lang: str = "es"):
     """
-    Analiza un texto y devuelve (conteo_por_categoria, cantidad_de_palabras)
-    según las reglas morfosintácticas del idioma elegido.
+    Analyzes a text and returns (count_per_category, word_count)
+    according to the morphosyntactic rules of the chosen language.
 
-    Las reglas de cada categoría dependen del tagset de spaCy de cada
-    idioma (por ejemplo, cómo se marca la negación), por eso el conteo se
-    hace con un if/elif por idioma en vez de una única lógica compartida.
+    Each category's rules depend on the spaCy tagset of each language
+    (e.g. how negation is marked), which is why counting is done with an
+    if/elif per language instead of a single shared piece of logic.
     """
     nlp = _get_model(lang)
-    contador = defaultdict(int)
+    counts = defaultdict(int)
     doc = nlp(text)
 
     # ------------------------------------------
-    # 1. ESPAÑOL
+    # 1. SPANISH
     # ------------------------------------------
     if lang == "es":
         for t in doc:
             if t.is_punct or t.is_space:
                 continue
 
-            if _es_negacion_es(t):
-                contador["negate"] += 1
+            if _is_negation_es(t):
+                counts["negate"] += 1
             elif t.pos_ == "PRON":
                 if "Prs" in t.morph.get("PronType"):
-                    contador["ppron"] += 1
+                    counts["ppron"] += 1
                 else:
-                    contador["ipron"] += 1
+                    counts["ipron"] += 1
             elif t.pos_ == "DET":
                 if "Art" in t.morph.get("PronType"):
-                    contador["article"] += 1
+                    counts["article"] += 1
             elif t.pos_ == "ADP":
-                contador["prep"] += 1
+                counts["prep"] += 1
             elif t.pos_ == "ADV":
-                contador["adverb"] += 1
+                counts["adverb"] += 1
             elif t.pos_ == "AUX":
-                contador["auxverb"] += 1
+                counts["auxverb"] += 1
             elif t.pos_ in ("CCONJ", "SCONJ"):
-                contador["conj"] += 1
+                counts["conj"] += 1
 
-        palabras_totales = len([t for t in doc if not (t.is_space or t.is_punct)])
-        return contador, palabras_totales
+        total_words = len([t for t in doc if not (t.is_space or t.is_punct)])
+        return counts, total_words
 
     # ------------------------------------------
-    # 2. INGLÉS
+    # 2. ENGLISH
     # ------------------------------------------
     elif lang == "en":
         for t in doc:
@@ -127,99 +127,104 @@ def conteo_categorias(text: str, lang: str = "es"):
                 continue
 
             if t.dep_ == "neg":
-                contador["negate"] += 1
+                counts["negate"] += 1
             elif t.pos_ == "PRON":
                 if t.tag_ in ("PRP", "PRP$"):
-                    contador["ppron"] += 1
+                    counts["ppron"] += 1
                 else:
-                    contador["ipron"] += 1
+                    counts["ipron"] += 1
             elif t.pos_ == "DET":
-                contador["article"] += 1
+                counts["article"] += 1
             elif t.pos_ == "ADP":
-                contador["prep"] += 1
+                counts["prep"] += 1
             elif t.pos_ == "ADV":
-                contador["adverb"] += 1
+                counts["adverb"] += 1
             elif t.pos_ == "AUX":
-                contador["auxverb"] += 1
+                counts["auxverb"] += 1
             elif t.pos_ in ("CCONJ", "SCONJ"):
-                contador["conj"] += 1
+                counts["conj"] += 1
 
-        palabras_totales = len(text.split())
-        return contador, palabras_totales
+        total_words = len(text.split())
+        return counts, total_words
 
     # ------------------------------------------
-    # [AGREGAR ACÁ UN NUEVO IDIOMA]
-    # Ej: elif lang == "pt": ...
+    # 3. GERMAN
+    # ------------------------------------------
+    elif lang == "gm":
+        
+    # ------------------------------------------
+    # [ADD A NEW LANGUAGE HERE]
+    # E.g.: elif lang == "pt": ...
     # ------------------------------------------
 
     else:
-        raise ValueError(f"Soporte no implementado para el idioma: '{lang}'")
+        raise ValueError(f"Support not implemented for language: '{lang}'")
 
 
 # ==========================================
-# CÁLCULO PRINCIPAL DE LSM
+# MAIN LSM COMPUTATION
 # ==========================================
 
-def calculo_LSM(conversation: list[str], lang: str = "es", min_words: int = 20) -> Optional[float]:
+def calculate_lsm(conversation: list[str], lang: str = "es", min_words: int = 20) -> Optional[float]:
     """
-    Recibe una lista de strings ["HABLANTE_A: texto", "HABLANTE_B: texto"]
-    y calcula la métrica de LSM para el idioma especificado ('es' o 'en').
+    Takes a list of strings ["SPEAKER_A: text", "SPEAKER_B: text"] and
+    computes the LSM metric for the specified language ('es' or 'en').
 
-    Devuelve None (no un float) cuando el valor de LSM está indefinido:
-    si hay menos de 2 hablantes, o si alguno de los dos hablantes
-    principales no tiene palabras contabilizadas.
+    Returns None (not a float) when the LSM value is undefined: if there
+    are fewer than 2 speakers, or if either of the two main speakers has
+    no words counted.
     """
-    Data_hablante = defaultdict(lambda: defaultdict(int))
-    contador_palabras_hablante = defaultdict(int)
+    speaker_data = defaultdict(lambda: defaultdict(int))
+    speaker_word_count = defaultdict(int)
 
-    # 1. Agrupar todo el texto por usuario
+    # 1. Group all the text by speaker
     for line in conversation:
         if ":" not in line:
             continue
-        user, text = line.split(":", 1)
-        user = user.strip()
+        speaker, text = line.split(":", 1)
+        speaker = speaker.strip()
 
-        counts, wc = conteo_categorias(text.strip(), lang=lang)
+        counts, wc = count_categories(text.strip(), lang=lang)
         for cat, val in counts.items():
-            Data_hablante[user][cat] += val
-        contador_palabras_hablante[user] += wc
+            speaker_data[speaker][cat] += val
+        speaker_word_count[speaker] += wc
 
-    # 2. Verificar que haya al menos 2 hablantes
-    hablantes_ids = list(Data_hablante.keys())
-    if len(hablantes_ids) < 2:
+    # 2. Check that there are at least 2 speakers
+    speaker_ids = list(speaker_data.keys())
+    if len(speaker_ids) < 2:
         return None
 
-    p1, p2 = hablantes_ids[0], hablantes_ids[1]
+    p1, p2 = speaker_ids[0], speaker_ids[1]
 
-    # Si alguno de los hablantes no tiene palabras contadas, los
-    # porcentajes serían 0/0 (indefinidos).
-    if (contador_palabras_hablante[p1] < min_words or
-        contador_palabras_hablante[p2] < min_words):
+    # If either speaker has no words counted, the percentages would be
+    # 0/0 (undefined).
+    if (speaker_word_count[p1] < min_words or
+        speaker_word_count[p2] < min_words):
         return None
 
-    # 3. Calcular porcentajes y LSM
+    # 3. Compute percentages and LSM
     lsm_scores = []
 
-    for c in CATEGORIAS:
-        pct1 = (Data_hablante[p1][c] / contador_palabras_hablante[p1]) * 100
-        pct2 = (Data_hablante[p2][c] / contador_palabras_hablante[p2]) * 100
+    for c in CATEGORIES:
+        pct1 = (speaker_data[p1][c] / speaker_word_count[p1]) * 100
+        pct2 = (speaker_data[p2][c] / speaker_word_count[p2]) * 100
 
         score = 1 - (abs(pct1 - pct2) / (pct1 + pct2 + 0.0001))
         lsm_scores.append(score)
 
-    return sum(lsm_scores) / len(lsm_scores) 
+    return sum(lsm_scores) / len(lsm_scores)
 
 
 if __name__ == "__main__":
 
-    dialogo_es = [
+    dialogue_es = [
         "A: Creo que no vamos a poder ir hoy porque está complicado.",
         "B: Sí, creo que no vamos a poder ir hoy, está bastante complicado."
     ]
-    print("LSM Español:", calculo_LSM(dialogo_es, lang="es"))
+    print("LSM Spanish:", calculate_lsm(dialogue_es, lang="es"))
 
-    dialogo_en = [
+    dialogue_en = [
         "A: I do not think we can go today because it is complicated.",
         "B: Yes I think we cannot go today it is quite complicated."
     ]
-    print("LSM Inglés: ", calculo_LSM(dialogo_en, lang="en"))
+    print("LSM English:", calculate_lsm(dialogue_en, lang="en"))

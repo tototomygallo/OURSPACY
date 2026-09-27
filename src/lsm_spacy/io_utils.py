@@ -1,25 +1,26 @@
 """
-Utilidad para leer un archivo .txt de diálogo y convertirlo en la lista
-de strings que espera calculo_LSM (["A: texto", "B: texto", ...]).
+Utility for reading a dialogue .txt file and turning it into the list of
+strings that calculate_lsm expects (["A: text", "B: text", ...]).
 
-No modifica ni toca la lógica de core.py.
+Does not modify or touch the logic in core.py.
 """
 
 from pathlib import Path
 
 
-def leer_dialogo(path: str | Path) -> list[str]:
+def read_dialogue(path: str | Path) -> list[str]:
     """
-    Lee un archivo .txt con líneas del formato "HABLANTE: texto" (una
-    intervención por línea) y devuelve la lista de strings lista para
-    pasarle a calculo_LSM.
+    Reads a .txt file with lines in the format "SPEAKER: text" (one turn
+    per line) and returns the list of strings ready to pass to
+    calculate_lsm.
 
-    Ignora líneas vacías. No valida el formato "HABLANTE:" en sí --
-    eso ya lo maneja calculo_LSM (las líneas sin ":" se descartan ahí).
+    Ignores empty lines. Does not validate the "SPEAKER:" format itself --
+    that's already handled by calculate_lsm (lines without ":" are
+    discarded there).
     """
     path = Path(path)
 
     with open(path, "r", encoding="utf8") as f:
-        lineas = [linea.strip() for linea in f if linea.strip()]
+        lines = [line.strip() for line in f if line.strip()]
 
-    return lineas
+    return lines
