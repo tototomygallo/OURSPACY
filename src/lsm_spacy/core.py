@@ -35,11 +35,21 @@ def _get_model(lang: str):
             _MODELS["en"] = spacy.load("en_core_web_md")
         return _MODELS["en"]
 
+    elif lang == "gm":
+        if "gm" not in _MODELS:
+            _MODELS["gm"] = spacy.load("de_core_news_md")
+        return _MODELS["gm"]
+
+    elif lang == "pt":
+        if "pt" not in _MODELS:
+            _MODELS["pt"] = spacy.load("pt_core_news_md")
+        return _MODELS["pt"]
+
     # [ADD A NEW LANGUAGE HERE]
-    # elif lang == "pt":
-    #     if "pt" not in _MODELS:
-    #         _MODELS["pt"] = spacy.load("pt_core_news_md")
-    #     return _MODELS["pt"]
+    # elif lang == "jp":
+    #     if "jp" not in _MODELS:
+    #         _MODELS["jp"] = spacy.load("ja_core_news_md")
+    #     return _MODELS["jp"]
 
     else:
         raise ValueError(f"No model configured for language '{lang}'.")
@@ -47,7 +57,7 @@ def _get_model(lang: str):
 
 def supported_languages() -> list[str]:
     """List of currently supported language codes."""
-    return ["es", "en"]
+    return ["es", "en", "gm", "pt"]  # + ["jp"] if you add Japanese support
 
 
 # ==========================================
@@ -95,7 +105,6 @@ def count_categories(text: str, lang: str = "es"):
         for t in doc:
             if t.is_punct or t.is_space:
                 continue
-
             if _is_negation_es(t):
                 counts["negate"] += 1
             elif t.pos_ == "PRON":
@@ -144,17 +153,105 @@ def count_categories(text: str, lang: str = "es"):
             elif t.pos_ in ("CCONJ", "SCONJ"):
                 counts["conj"] += 1
 
-        total_words = len(text.split())
+        total_words = len([t for t in doc if not (t.is_space or t.is_punct)])
         return counts, total_words
 
     # ------------------------------------------
     # 3. GERMAN
     # ------------------------------------------
     elif lang == "gm":
-        
+            # Lemas de auxiliares principales en alemán
+        LEMAS_AUX = {"sein", "haben", "werden"}
+
+        for t in doc:
+            if t.is_punct or t.is_space:
+                continue
+
+            tag = t.tag_  # Etiqueta STTS fina para alemán
+            lemma = t.lemma_.lower()
+
+            # 1. Negaciones ('nicht' o determinantes negativos como 'kein/keine')
+            if tag == "PTKNEG" or lemma == "kein":
+                counts["negate"] += 1
+
+            # 2. Pronombres Personales (ich, du, er, sich, mein, dein...)
+            elif tag in ["PPER", "PRF", "POSS"]:
+                counts["ppron"] += 1
+
+            # 3. Pronombres Impersonales/Demostrativos (das, dies, jemand, wer...)
+            elif tag in ["PIS", "PDS", "PDAT", "PWS", "PWAT", "PRELS"]:
+                counts["ipron"] += 1
+
+            # 4. Artículos (der, die, das, ein, eine...)
+            elif tag == "ART":
+                counts["article"] += 1
+
+            # 5. Preposiciones (in, auf, mit y fusiones como im, am, zum)
+            elif tag in ["APPR", "APPRART", "APPO"]:
+                counts["prep"] += 1
+
+            # 6. Adverbios (hier, da, schnell, damit, darüber...)
+            elif tag in ["ADV", "PAV"]:
+                counts["adverb"] += 1
+
+            # 7. Verbos Auxiliares (formas conjugadas de sein, haben, werden)
+            elif tag.startswith("VA") or (
+                t.pos_ in ["VERB", "AUX"] and lemma in LEMAS_AUX
+            ):
+                counts["auxverb"] += 1
+
+            # 8. Conjunciones (und, oder, aber, weil, dass...)
+            elif tag in ["KON", "KOUS", "KOUI"] or t.pos_ in ["CCONJ", "SCONJ"]:
+                counts["conj"] += 1
+
+        total_words = len([t for t in doc if not (t.is_space or t.is_punct)])
+        return counts, total_words
+
+    elif lang == "pt":
+        for t in doc:
+            if t.is_punct or t.is_space:
+                continue
+            # Atributo morfológico en dict o lista para verificar claves/valores
+            polarity = t.morph.get("Polarity")
+            prontype = t.morph.get("PronType")
+            definite = t.morph.get("Definite")
+
+            # 1. Negaciones (Estricto por marcador morfológico UD)
+            if "Neg" in polarity:
+                counts["negate"] += 1
+
+            # 2 y 3. Pronombres (Personales/Poseedores vs Impersonales/Otros)
+            elif t.pos_ == "PRON":
+                if "Prs" in prontype:
+                    counts["ppron"] += 1
+                else:
+                    counts["ipron"] += 1
+
+            # 4. Artículos (Definidos e Indefinidos)
+            elif t.pos_ == "DET" and any(d in definite for d in ["Def", "Ind"]):
+                counts["article"] += 1
+
+            # 5. Preposiciones
+            elif t.pos_ == "ADP":
+                counts["prep"] += 1
+
+            # 6. Adverbios (Evaluado tras negate)
+            elif t.pos_ == "ADV":
+                counts["adverb"] += 1
+
+            # 7. Verbos Auxiliares
+            elif t.pos_ == "AUX":
+                counts["auxverb"] += 1
+
+            # 8. Conjunciones (Coordinantes y Subordinantes)
+            elif t.pos_ in ["CCONJ", "SCONJ"]:
+                counts["conj"] += 1
+
+        total_words = len([t for t in doc if not (t.is_space or t.is_punct)])
+        return counts, total_words
     # ------------------------------------------
     # [ADD A NEW LANGUAGE HERE]
-    # E.g.: elif lang == "pt": ...
+    # E.g.: elif lang == "jp": ...
     # ------------------------------------------
 
     else:
